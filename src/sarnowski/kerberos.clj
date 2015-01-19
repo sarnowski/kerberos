@@ -46,17 +46,19 @@
                   (run []
                     (let [credential nil                    ; hack to choose correct constructor
                           ctx (.. GSSManager (getInstance) (createContext #^GSSCredential credential))]
-                      (.acceptSecContext ctx ticket 0 (alength ticket))
-                      (let [info {:principal (.getSrcName ctx)
-                                  :delegation (.getCredDelegState ctx)
-                                  :delegation-credential (.getDelegCred ctx)
-                                  :anonymity (.getAnonymityState ctx)
-                                  :integrity (.getIntegState ctx)
-                                  :lifetime (.getLifetime ctx)
-                                  :mechanism (.getMech ctx)
-                                  :mutual-auth (.getMutualAuthState ctx)}]
-                        (.dispose ctx)
-                        info))))))
+                      (try
+                        (.acceptSecContext ctx ticket 0 (alength ticket))
+
+                        {:principal (.getSrcName ctx)
+                         :delegation (.getCredDelegState ctx)
+                         :delegation-credential (if (.getCredDelegState ctx) (.getDelegCred ctx) nil)
+                         :anonymity (.getAnonymityState ctx)
+                         :integrity (.getIntegState ctx)
+                         :lifetime (.getLifetime ctx)
+                         :mechanism (.getMech ctx)
+                         :mutual-auth (.getMutualAuthState ctx)}
+                        (finally
+                          (.dispose ctx))))))))
 
 (defn login-user
   "Logs in a user with its username and password. Optionally can take additional callback functions for required input.
